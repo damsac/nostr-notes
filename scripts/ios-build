@@ -42,11 +42,11 @@ CARGO_FLAGS=()
 echo "=== Cross-compiling $CRATE_NAME for iOS ==="
 for target in "${TARGETS[@]}"; do
   echo "Building for $target..."
-  cargo build -p "$CRATE_NAME" --target "$target" "${CARGO_FLAGS[@]}"
+  cargo build -p "$CRATE_NAME" --target "$target" ${CARGO_FLAGS[@]+"${CARGO_FLAGS[@]}"}
 done
 
 echo "=== Building host library for UniFFI metadata ==="
-cargo build -p "$CRATE_NAME" "${CARGO_FLAGS[@]}"
+cargo build -p "$CRATE_NAME" ${CARGO_FLAGS[@]+"${CARGO_FLAGS[@]}"}
 
 echo "=== Generating Swift bindings ==="
 BINDINGS_DIR="$OUTPUT_DIR/Bindings"

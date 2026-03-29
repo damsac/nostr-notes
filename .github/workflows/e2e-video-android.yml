@@ -73,7 +73,7 @@ jobs:
       - name: Build and install APK
         run: |
           cd android
-          ./gradlew assembleDebug
+          gradle assembleDebug
           APK=$(find app/build/outputs/apk/debug -name "*.apk" | head -1)
           if [ -z "$APK" ]; then
             echo "::warning::No APK found"

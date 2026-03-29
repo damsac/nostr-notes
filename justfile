@@ -39,10 +39,10 @@ android-build-release:
     ./scripts/android-build --crate-name {{ffi_crate}} --release
 
 android-apk: android-build
-    cd android && ./gradlew assembleDebug
+    cd android && gradle assembleDebug
 
 android-install: android-apk
-    cd android && ./gradlew installDebug
+    cd android && gradle installDebug
 
 # === CI / QA ===
 

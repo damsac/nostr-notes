@@ -35,7 +35,7 @@ jobs:
           FFI_CRATE: nostr-notes-ffi
 
       - name: Build APK
-        run: cd android && ./gradlew assembleDebug
+        run: cd android && gradle assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
