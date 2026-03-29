@@ -1,0 +1,7 @@
+[bindings.kotlin]
+package_name = "dev.damsac.nostr-notes.rust"
+cdylib_name = "nostr_notes"
+
+[bindings.swift]
+module_name = "NostrNotesCore"
+cdylib_name = "nostr_notes"

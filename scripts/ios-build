@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# RMP iOS Build Script
+# Cross-compiles an FFI crate for iOS, generates Swift bindings, creates XCFramework.
+# Usage: ./scripts/ios-build --crate-name <crate> [--output-dir <dir>] [--release]
+
+CRATE_NAME=""
+OUTPUT_DIR="ios"
+PROFILE="debug"
+PROFILE_DIR="debug"
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --crate-name) CRATE_NAME="$2"; shift 2 ;;
+    --output-dir) OUTPUT_DIR="$2"; shift 2 ;;
+    --release) PROFILE="release"; PROFILE_DIR="release"; shift ;;
+    *) echo "Unknown option: $1"; exit 1 ;;
+  esac
+done
+
+if [ -z "$CRATE_NAME" ]; then
+  echo "Error: --crate-name is required"
+  echo "Usage: ./scripts/ios-build --crate-name <crate> [--output-dir <dir>] [--release]"
+  exit 1
+fi
+
+# Detect and fix Nix environment for iOS cross-compilation
+if [ -n "${NIX_CC:-}" ] || [ -n "${NIX_CFLAGS_COMPILE:-}" ]; then
+  echo "Detected Nix environment — unsetting variables that interfere with iOS cross-compilation"
+  unset SDKROOT NIX_CFLAGS_COMPILE NIX_LDFLAGS NIX_CC NIX_CC_WRAPPER_TARGET_HOST_x86_64_apple_darwin
+  unset MACOSX_DEPLOYMENT_TARGET
+  export CC=/usr/bin/clang
+  export CXX=/usr/bin/clang++
+  export AR=/usr/bin/ar
+fi
+
+TARGETS=("aarch64-apple-ios" "aarch64-apple-ios-sim")
+CARGO_FLAGS=()
+[ "$PROFILE" = "release" ] && CARGO_FLAGS+=("--release")
+
+echo "=== Cross-compiling $CRATE_NAME for iOS ==="
+for target in "${TARGETS[@]}"; do
+  echo "Building for $target..."
+  cargo build -p "$CRATE_NAME" --target "$target" "${CARGO_FLAGS[@]}"
+done
+
+echo "=== Building host library for UniFFI metadata ==="
+cargo build -p "$CRATE_NAME" "${CARGO_FLAGS[@]}"
+
+echo "=== Generating Swift bindings ==="
+BINDINGS_DIR="$OUTPUT_DIR/Bindings"
+mkdir -p "$BINDINGS_DIR"
+
+# Determine the library name (crate name with hyphens replaced by underscores)
+LIB_NAME="${CRATE_NAME//-/_}"
+
+cargo run -p uniffi-bindgen generate \
+  --library "target/$PROFILE_DIR/lib${LIB_NAME}.dylib" \
+  --language swift \
+  --out-dir "$BINDINGS_DIR"
+
+echo "=== Creating XCFramework ==="
+XCFRAMEWORK_DIR="$OUTPUT_DIR/Frameworks"
+rm -rf "$XCFRAMEWORK_DIR/${CRATE_NAME}.xcframework"
+mkdir -p "$XCFRAMEWORK_DIR"
+
+xcodebuild -create-xcframework \
+  -library "target/aarch64-apple-ios/$PROFILE_DIR/lib${LIB_NAME}.a" \
+  -headers "$BINDINGS_DIR" \
+  -library "target/aarch64-apple-ios-sim/$PROFILE_DIR/lib${LIB_NAME}.a" \
+  -headers "$BINDINGS_DIR" \
+  -output "$XCFRAMEWORK_DIR/${CRATE_NAME}.xcframework"
+
+echo "=== Done ==="
+echo "XCFramework: $XCFRAMEWORK_DIR/${CRATE_NAME}.xcframework"
+echo "Swift bindings: $BINDINGS_DIR/"

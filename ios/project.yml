@@ -1,0 +1,51 @@
+name: "NostrNotes"
+options:
+  bundleIdPrefix: dev.damsac
+  deploymentTarget:
+    iOS: "17.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+targets:
+  "NostrNotes":
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+      - path: Bindings
+        excludes:
+          - "*.h"
+          - "*.modulemap"
+    dependencies:
+      - framework: "Frameworks/NostrNotesCore.xcframework"
+        embed: false
+      - package: MapLibreSwiftUI
+        product: MapLibreSwiftUI
+      - package: MapLibreSwiftUI
+        product: MapLibreSwiftDSL
+    settings:
+      base:
+        INFOPLIST_FILE: Info.plist
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: "NostrNotes"
+        UILaunchScreen: {}
+  "NostrNotesTests":
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests
+      - path: Sources
+      - path: Bindings
+        excludes:
+          - "*.h"
+          - "*.modulemap"
+    dependencies:
+      - target: "NostrNotes"
+      - framework: "Frameworks/NostrNotesCore.xcframework"
+        embed: false
+packages:
+  MapLibreSwiftUI:
+    url: https://github.com/maplibre/swiftui-dsl.git
+    from: "0.24.0"
