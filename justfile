@@ -25,10 +25,10 @@ fmt-fix:
 # === iOS ===
 
 ios-build:
-    ./scripts/ios-build --crate-name {{ffi_crate}}
+    ./scripts/ios-build --crate-name {{ffi_crate}} --framework-name NostrNotesCore
 
 ios-build-release:
-    ./scripts/ios-build --crate-name {{ffi_crate}} --release
+    ./scripts/ios-build --crate-name {{ffi_crate}} --framework-name NostrNotesCore --release
 
 # === Android ===
 
