@@ -24,7 +24,7 @@ jobs:
       - name: Build iOS (XCFramework + bindings)
         run: ./scripts/ios-build --crate-name $FFI_CRATE --release
         env:
-          FFI_CRATE: myapp-ffi  # Change this
+          FFI_CRATE: nostr-notes-ffi
 
       - name: Verify committed bindings are up-to-date
         run: git diff --exit-code ios/Bindings/

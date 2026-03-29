@@ -8,6 +8,10 @@ on:
       - "android/**"
   workflow_dispatch:
 
+permissions:
+  pull-requests: write
+  contents: read
+
 jobs:
   e2e-video-android:
     runs-on: ubuntu-latest

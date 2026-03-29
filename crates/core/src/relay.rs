@@ -55,8 +55,7 @@ impl RelayClient {
         pubkey_hex: &str,
         limit: u16,
     ) -> Result<Vec<Note>, Error> {
-        let pubkey =
-            PublicKey::from_hex(pubkey_hex).map_err(|e| Error::Relay(e.to_string()))?;
+        let pubkey = PublicKey::from_hex(pubkey_hex).map_err(|e| Error::Relay(e.to_string()))?;
 
         let filter = Filter::new()
             .author(pubkey)

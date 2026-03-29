@@ -8,6 +8,10 @@ on:
       - "ios/**"
   workflow_dispatch:
 
+permissions:
+  pull-requests: write
+  contents: read
+
 jobs:
   e2e-video-ios:
     runs-on: macos-15

@@ -54,11 +54,7 @@ async fn main() -> Result<()> {
     }
 
     if !failed.is_empty() {
-        anyhow::bail!(
-            "{} upload(s) failed: {}",
-            failed.len(),
-            failed.join(", ")
-        );
+        anyhow::bail!("{} upload(s) failed: {}", failed.len(), failed.join(", "));
     }
 
     Ok(())
@@ -155,10 +151,7 @@ async fn build_auth_header(
 ) -> Result<String> {
     let event = EventBuilder::new(Kind::Custom(24242), "")
         .tag(Tag::custom(TagKind::Custom("t".into()), ["upload"]))
-        .tag(Tag::custom(
-            TagKind::Custom("x".into()),
-            [sha256_hex],
-        ))
+        .tag(Tag::custom(TagKind::Custom("x".into()), [sha256_hex]))
         .tag(Tag::custom(
             TagKind::Custom("size".into()),
             [&size.to_string()],
