@@ -37,7 +37,7 @@ jobs:
           cd ios
           xcodebuild -resolvePackageDependencies \
             -project *.xcodeproj \
-            -scheme $(xcodegen dump --spec project.yml 2>/dev/null | head -1 || echo "App")
+            -scheme NostrNotes
 
       - name: Build for simulator
         run: |
@@ -45,7 +45,7 @@ jobs:
           set -o pipefail
           xcodebuild build \
             -project *.xcodeproj \
-            -scheme $(ls *.xcodeproj | sed 's/.xcodeproj//') \
+            -scheme NostrNotes \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
             -skipMacroValidation \
             ARCHS=arm64 \
@@ -57,7 +57,7 @@ jobs:
           set -o pipefail
           xcodebuild test \
             -project *.xcodeproj \
-            -scheme $(ls *.xcodeproj | sed 's/.xcodeproj//') \
+            -scheme NostrNotes \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
             -skipMacroValidation \
             ARCHS=arm64 \
