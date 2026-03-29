@@ -6,7 +6,6 @@ set -euo pipefail
 # Usage: ./scripts/ios-build --crate-name <crate> [--output-dir <dir>] [--release]
 
 CRATE_NAME=""
-FRAMEWORK_NAME=""
 OUTPUT_DIR="ios"
 PROFILE="debug"
 PROFILE_DIR="debug"
@@ -14,7 +13,6 @@ PROFILE_DIR="debug"
 while [[ $# -gt 0 ]]; do
   case $1 in
     --crate-name) CRATE_NAME="$2"; shift 2 ;;
-    --framework-name) FRAMEWORK_NAME="$2"; shift 2 ;;
     --output-dir) OUTPUT_DIR="$2"; shift 2 ;;
     --release) PROFILE="release"; PROFILE_DIR="release"; shift ;;
     *) echo "Unknown option: $1"; exit 1 ;;
@@ -23,12 +21,9 @@ done
 
 if [ -z "$CRATE_NAME" ]; then
   echo "Error: --crate-name is required"
-  echo "Usage: ./scripts/ios-build --crate-name <crate> [--framework-name <name>] [--output-dir <dir>] [--release]"
+  echo "Usage: ./scripts/ios-build --crate-name <crate> [--output-dir <dir>] [--release]"
   exit 1
 fi
-
-# Default framework name to crate name if not specified
-FRAMEWORK_NAME="${FRAMEWORK_NAME:-$CRATE_NAME}"
 
 # Detect and fix Nix environment for iOS cross-compilation
 if [ -n "${NIX_CC:-}" ] || [ -n "${NIX_CFLAGS_COMPILE:-}" ]; then
@@ -67,7 +62,7 @@ cargo run -p uniffi-bindgen generate \
 
 echo "=== Creating XCFramework ==="
 XCFRAMEWORK_DIR="$OUTPUT_DIR/Frameworks"
-rm -rf "$XCFRAMEWORK_DIR/${FRAMEWORK_NAME}.xcframework"
+rm -rf "$XCFRAMEWORK_DIR/${LIB_NAME}.xcframework"
 mkdir -p "$XCFRAMEWORK_DIR"
 
 xcodebuild -create-xcframework \
@@ -75,8 +70,8 @@ xcodebuild -create-xcframework \
   -headers "$BINDINGS_DIR" \
   -library "target/aarch64-apple-ios-sim/$PROFILE_DIR/lib${LIB_NAME}.a" \
   -headers "$BINDINGS_DIR" \
-  -output "$XCFRAMEWORK_DIR/${FRAMEWORK_NAME}.xcframework"
+  -output "$XCFRAMEWORK_DIR/${LIB_NAME}.xcframework"
 
 echo "=== Done ==="
-echo "XCFramework: $XCFRAMEWORK_DIR/${FRAMEWORK_NAME}.xcframework"
+echo "XCFramework: $XCFRAMEWORK_DIR/${LIB_NAME}.xcframework"
 echo "Swift bindings: $BINDINGS_DIR/"

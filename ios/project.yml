@@ -17,7 +17,7 @@ targets:
           - "*.h"
           - "*.modulemap"
     dependencies:
-      - framework: "Frameworks/NostrNotesCore.xcframework"
+      - framework: "Frameworks/nostr_notes_ffi.xcframework"
         embed: false
     settings:
       base:
@@ -39,5 +39,5 @@ targets:
           - "*.modulemap"
     dependencies:
       - target: "NostrNotes"
-      - framework: "Frameworks/NostrNotesCore.xcframework"
+      - framework: "Frameworks/nostr_notes_ffi.xcframework"
         embed: false

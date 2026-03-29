@@ -48,7 +48,7 @@ jobs:
           sleep 2  # let recorder initialise
 
       - name: Build iOS (XCFramework + bindings)
-        run: ./scripts/ios-build --crate-name $FFI_CRATE --framework-name NostrNotesCore
+        run: ./scripts/ios-build --crate-name $FFI_CRATE
 
       - name: Generate Xcode project
         run: cd ios && xcodegen generate
