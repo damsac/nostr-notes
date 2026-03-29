@@ -19,14 +19,29 @@ fn event_to_note(event: &Event) -> Note {
     }
 }
 
+/// Default public relays that are known to have content.
+const DEFAULT_RELAYS: &[&str] = &[
+    "wss://relay.damus.io",
+    "wss://nos.lol",
+    "wss://relay.nostr.band",
+];
+
 impl RelayClient {
-    pub async fn new(relay_url: &str, data_dir: &str) -> Result<Self, Error> {
+    /// Create a new relay client connected to the given relays plus defaults.
+    ///
+    /// `relay_urls` may be empty — the default public relays are always included.
+    pub async fn new(relay_urls: &[&str], data_dir: &str) -> Result<Self, Error> {
         let store = Store::new(data_dir)?;
         let client = Client::default();
-        client
-            .add_relay(relay_url)
-            .await
-            .map_err(|e| Error::Relay(e.to_string()))?;
+
+        // Add user-provided relays first, then defaults.
+        // add_relay silently deduplicates, so overlap is fine.
+        for url in relay_urls.iter().chain(DEFAULT_RELAYS.iter()) {
+            if let Err(e) = client.add_relay(*url).await {
+                log::warn!("failed to add relay {}: {}", url, e);
+            }
+        }
+
         client.connect().await;
         Ok(Self { client, store })
     }

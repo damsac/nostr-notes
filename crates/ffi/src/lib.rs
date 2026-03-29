@@ -51,11 +51,19 @@ pub struct AppCore {
 
 #[uniffi::export]
 impl AppCore {
+    /// Create a new AppCore connected to the given relay URL (plus built-in public relays).
+    ///
+    /// Pass an empty string to connect only to the default public relays.
     #[uniffi::constructor]
     pub fn new(relay_url: String, data_dir: String) -> Result<Self, FfiError> {
         let rt = Runtime::new().map_err(|e| FfiError::Internal(e.to_string()))?;
+        let urls: Vec<&str> = if relay_url.is_empty() {
+            vec![]
+        } else {
+            vec![relay_url.as_str()]
+        };
         let client = rt
-            .block_on(RelayClient::new(&relay_url, &data_dir))
+            .block_on(RelayClient::new(&urls, &data_dir))
             .map_err(FfiError::from)?;
         Ok(Self {
             client: Mutex::new(client),

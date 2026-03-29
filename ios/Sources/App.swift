@@ -13,6 +13,7 @@ struct NoteListView: View {
     @State private var notes: [FfiNote] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var core: AppCore?
 
     private let relayUrl = "wss://nostr.damsac.studio"
 
@@ -20,7 +21,7 @@ struct NoteListView: View {
         NavigationStack {
             Group {
                 if isLoading && notes.isEmpty {
-                    ProgressView("Connecting to relay...")
+                    ProgressView("Connecting to relays...")
                 } else if let error = errorMessage, notes.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "wifi.exclamationmark")
@@ -44,16 +45,30 @@ struct NoteListView: View {
         }
     }
 
+    private func getOrCreateCore() throws -> AppCore {
+        if let existing = core {
+            return existing
+        }
+        let dataDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].path()
+        let newCore = try AppCore(relayUrl: relayUrl, dataDir: dataDir)
+        core = newCore
+        return newCore
+    }
+
     func loadNotes() async {
         isLoading = true
         errorMessage = nil
         do {
-            let dataDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].path()
-            let core = try AppCore(relayUrl: relayUrl, dataDir: dataDir)
-            let fetched = try core.fetchGlobalNotes(limit: 50)
+            let appCore = try getOrCreateCore()
+            let fetched = try appCore.fetchGlobalNotes(limit: 50)
             notes = fetched
         } catch {
-            errorMessage = error.localizedDescription
+            // If core creation failed, clear it so next attempt retries
+            if core == nil {
+                errorMessage = "Failed to connect: \(error.localizedDescription)"
+            } else {
+                errorMessage = error.localizedDescription
+            }
         }
         isLoading = false
     }

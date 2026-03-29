@@ -42,14 +42,24 @@ fun NoteListScreen(dataDir: String) {
     val scope = rememberCoroutineScope()
     val relayUrl = "wss://nostr.damsac.studio"
 
+    // Create AppCore once and reuse across refreshes
+    val core = remember {
+        try {
+            AppCore(relayUrl, dataDir)
+        } catch (e: Exception) {
+            null
+        }
+    }
+    var coreError by remember { mutableStateOf<String?>(if (core == null) "Failed to initialize relay connection" else null) }
+
     fun refresh() {
         scope.launch {
             isLoading = true
             error = null
             try {
+                val appCore = core ?: throw Exception(coreError ?: "AppCore not initialized")
                 val fetched = withContext(Dispatchers.IO) {
-                    val core = AppCore(relayUrl, dataDir)
-                    core.fetchGlobalNotes(50u)
+                    appCore.fetchGlobalNotes(50u)
                 }
                 notes = fetched
             } catch (e: Exception) {
