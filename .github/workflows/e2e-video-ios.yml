@@ -6,6 +6,7 @@ on:
     paths:
       - "crates/**"
       - "ios/**"
+      - "scripts/**"
   workflow_dispatch:
 
 permissions:

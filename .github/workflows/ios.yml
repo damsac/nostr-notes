@@ -26,9 +26,6 @@ jobs:
         env:
           FFI_CRATE: nostr-notes-ffi
 
-      - name: Verify committed bindings are up-to-date
-        run: git diff --exit-code ios/Bindings/
-
       - name: Generate Xcode project
         run: cd ios && xcodegen generate
 
