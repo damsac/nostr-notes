@@ -60,13 +60,6 @@ jobs:
           adb shell input keyevent 82
           sleep 2
 
-      - name: Start screen recording
-        run: |
-          # screenrecord has a 3-minute max; start it in the background
-          adb shell screenrecord --bit-rate 3000000 /sdcard/recording.mp4 &
-          echo $! > recorder.pid
-          sleep 2  # let recorder initialise
-
       - name: Build Android (cross-compile + bindings)
         run: ./scripts/android-build --crate-name $FFI_CRATE
 
@@ -76,8 +69,8 @@ jobs:
           ./gradlew assembleDebug
           APK=$(find app/build/outputs/apk/debug -name "*.apk" | head -1)
           if [ -z "$APK" ]; then
-            echo "::warning::No APK found"
-            exit 0
+            echo "::error::No APK found"
+            exit 1
           fi
           adb install "$APK"
 
@@ -86,8 +79,18 @@ jobs:
           adb shell am start -n dev.damsac.nostrnotes/.MainActivity 2>/dev/null || \
           adb shell monkey -p dev.damsac.nostrnotes -c android.intent.category.LAUNCHER 1
 
-      - name: Wait for app to load
-        run: sleep 10
+      - name: Wait for app to render
+        run: sleep 2
+
+      - name: Start screen recording
+        run: |
+          # screenrecord has a 3-minute max; start it in the background
+          adb shell screenrecord --bit-rate 3000000 /sdcard/recording.mp4 &
+          echo $! > recorder.pid
+          sleep 2  # let recorder initialise
+
+      - name: Record app in action
+        run: sleep 8
 
       - name: Stop screen recording and pull video
         if: always()
