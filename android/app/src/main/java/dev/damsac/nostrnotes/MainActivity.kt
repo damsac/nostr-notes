@@ -13,13 +13,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import dev.damsac.nostr_notes.rust.AppCore
-import dev.damsac.nostr_notes.rust.FfiNote
+import dev.damsac.nostrnotes.rust.AppCore
+import dev.damsac.nostrnotes.rust.FfiNote
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,18 +40,31 @@ fun NoteListScreen(dataDir: String) {
     val scope = rememberCoroutineScope()
     val relayUrl = "wss://nostr.damsac.studio"
 
+    val core = remember {
+        try {
+            AppCore(relayUrl, dataDir)
+        } catch (e: Exception) {
+            null
+        }
+    }
+    var coreError by remember {
+        mutableStateOf<String?>(
+            if (core == null) "Failed to connect. Check your network and try again." else null
+        )
+    }
+
     fun refresh() {
         scope.launch {
             isLoading = true
             error = null
             try {
+                val appCore = core ?: throw Exception(coreError ?: "Not connected")
                 val fetched = withContext(Dispatchers.IO) {
-                    val core = AppCore(relayUrl, dataDir)
-                    core.fetchGlobalNotes(50u)
+                    appCore.fetchGlobalNotes(50u)
                 }
                 notes = fetched
             } catch (e: Exception) {
-                error = e.message
+                error = "Could not load notes. Pull to refresh."
             }
             isLoading = false
         }
@@ -63,7 +74,19 @@ fun NoteListScreen(dataDir: String) {
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Nostr Notes") })
+            TopAppBar(
+                title = { Text("Notes") },
+                actions = {
+                    if (notes.isNotEmpty()) {
+                        Text(
+                            text = "${notes.size}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(end = 16.dp)
+                        )
+                    }
+                }
+            )
         }
     ) { padding ->
         PullToRefreshBox(
@@ -79,7 +102,10 @@ fun NoteListScreen(dataDir: String) {
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(error ?: "Unknown error", color = MaterialTheme.colorScheme.error)
+                    Text(
+                        error ?: "Something went wrong",
+                        color = MaterialTheme.colorScheme.error
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(onClick = { refresh() }) { Text("Retry") }
                 }
@@ -102,40 +128,27 @@ fun NoteCard(note: FfiNote) {
             .padding(horizontal = 12.dp, vertical = 4.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = note.content,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 5,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(modifier = Modifier.height(6.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = note.pubkey.take(12) + "...",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = note.displayName,
+                    style = MaterialTheme.typography.titleSmall
                 )
                 Text(
-                    text = formatRelativeTime(note.createdAt),
+                    text = note.relativeTime,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = note.content,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 6,
+                overflow = TextOverflow.Ellipsis
+            )
         }
-    }
-}
-
-fun formatRelativeTime(timestamp: Long): String {
-    val now = Instant.now()
-    val then = Instant.ofEpochSecond(timestamp)
-    val minutes = ChronoUnit.MINUTES.between(then, now)
-    return when {
-        minutes < 1 -> "just now"
-        minutes < 60 -> "${minutes}m ago"
-        minutes < 1440 -> "${minutes / 60}h ago"
-        else -> "${minutes / 1440}d ago"
     }
 }

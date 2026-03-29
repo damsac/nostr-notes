@@ -32,7 +32,7 @@ jobs:
       - name: Build Android (cross-compile + bindings)
         run: ./scripts/android-build --crate-name $FFI_CRATE
         env:
-          FFI_CRATE: myapp-ffi  # Change this
+          FFI_CRATE: nostr-notes-ffi
 
       - name: Build APK
         run: cd android && ./gradlew assembleDebug

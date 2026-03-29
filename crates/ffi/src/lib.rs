@@ -1,6 +1,6 @@
 uniffi::setup_scaffolding!();
 
-use nostr_notes_core::{Error as CoreError, Note, RelayClient};
+use nostr_notes_core::{relative_time, Error as CoreError, Note, RelayClient};
 use std::sync::Mutex;
 use tokio::runtime::Runtime;
 
@@ -8,9 +8,9 @@ use tokio::runtime::Runtime;
 pub enum FfiError {
     #[error("Not found: {0}")]
     NotFound(String),
-    #[error("Relay error: {0}")]
+    #[error("Could not connect to relays: {0}")]
     Relay(String),
-    #[error("Internal error: {0}")]
+    #[error("Something went wrong: {0}")]
     Internal(String),
 }
 
@@ -30,15 +30,22 @@ pub struct FfiNote {
     pub pubkey: String,
     pub content: String,
     pub created_at: i64,
+    /// Resolved profile name or truncated npub (never empty).
+    pub display_name: String,
+    /// Human-readable relative timestamp (e.g. "2m ago", "3h ago").
+    pub relative_time: String,
 }
 
 impl From<Note> for FfiNote {
     fn from(n: Note) -> Self {
+        let rel = relative_time(n.created_at);
         FfiNote {
             id: n.id,
             pubkey: n.pubkey,
             content: n.content,
             created_at: n.created_at,
+            display_name: n.display_name,
+            relative_time: rel,
         }
     }
 }
@@ -51,11 +58,19 @@ pub struct AppCore {
 
 #[uniffi::export]
 impl AppCore {
+    /// Create a new AppCore connected to the given relay URL (plus built-in public relays).
+    ///
+    /// Pass an empty string to connect only to the default public relays.
     #[uniffi::constructor]
     pub fn new(relay_url: String, data_dir: String) -> Result<Self, FfiError> {
         let rt = Runtime::new().map_err(|e| FfiError::Internal(e.to_string()))?;
+        let urls: Vec<&str> = if relay_url.is_empty() {
+            vec![]
+        } else {
+            vec![relay_url.as_str()]
+        };
         let client = rt
-            .block_on(RelayClient::new(&relay_url, &data_dir))
+            .block_on(RelayClient::new(&urls, &data_dir))
             .map_err(FfiError::from)?;
         Ok(Self {
             client: Mutex::new(client),

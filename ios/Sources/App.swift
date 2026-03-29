@@ -13,6 +13,7 @@ struct NoteListView: View {
     @State private var notes: [FfiNote] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var core: AppCore?
 
     private let relayUrl = "wss://nostr.damsac.studio"
 
@@ -20,7 +21,7 @@ struct NoteListView: View {
         NavigationStack {
             Group {
                 if isLoading && notes.isEmpty {
-                    ProgressView("Connecting to relay...")
+                    ProgressView("Connecting to relays...")
                 } else if let error = errorMessage, notes.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "wifi.exclamationmark")
@@ -39,21 +40,43 @@ struct NoteListView: View {
                     .refreshable { await loadNotes() }
                 }
             }
-            .navigationTitle("Nostr Notes")
+            .navigationTitle("Notes")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    if !notes.isEmpty {
+                        Text("\(notes.count)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
             .task { await loadNotes() }
         }
+    }
+
+    private func getOrCreateCore() throws -> AppCore {
+        if let existing = core {
+            return existing
+        }
+        let dataDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].path()
+        let newCore = try AppCore(relayUrl: relayUrl, dataDir: dataDir)
+        core = newCore
+        return newCore
     }
 
     func loadNotes() async {
         isLoading = true
         errorMessage = nil
         do {
-            let dataDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].path()
-            let core = try AppCore(relayUrl: relayUrl, dataDir: dataDir)
-            let fetched = try core.fetchGlobalNotes(limit: 50)
+            let appCore = try getOrCreateCore()
+            let fetched = try appCore.fetchGlobalNotes(limit: 50)
             notes = fetched
         } catch {
-            errorMessage = error.localizedDescription
+            if core == nil {
+                errorMessage = "Failed to connect. Check your network and try again."
+            } else {
+                errorMessage = "Could not load notes. Pull to refresh."
+            }
         }
         isLoading = false
     }
@@ -63,26 +86,21 @@ struct NoteRow: View {
     let note: FfiNote
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(note.content)
-                .lineLimit(5)
-            HStack {
-                Text(String(note.pubkey.prefix(12)) + "...")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Text(note.displayName)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
                 Spacer()
-                Text(formatTimestamp(note.createdAt))
+                Text(note.relativeTime)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.tertiary)
             }
+            Text(note.content)
+                .font(.body)
+                .lineLimit(6)
+                .foregroundStyle(.primary)
         }
         .padding(.vertical, 4)
-    }
-
-    func formatTimestamp(_ ts: Int64) -> String {
-        let date = Date(timeIntervalSince1970: TimeInterval(ts))
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: .now)
     }
 }

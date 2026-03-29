@@ -17,11 +17,12 @@ targets:
           - "*.h"
           - "*.modulemap"
     dependencies:
-      - framework: "Frameworks/NostrNotesCore.xcframework"
+      - framework: "Frameworks/nostr_notes_ffi.xcframework"
         embed: false
     settings:
       base:
         INFOPLIST_FILE: Info.plist
+        ENABLE_TESTABILITY: YES
     info:
       path: Info.plist
       properties:
@@ -32,12 +33,11 @@ targets:
     platform: iOS
     sources:
       - path: Tests
-      - path: Sources
-      - path: Bindings
-        excludes:
-          - "*.h"
-          - "*.modulemap"
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: NostrNotes
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/NostrNotes.app/NostrNotes"
+        BUNDLE_LOADER: "$(TEST_HOST)"
     dependencies:
       - target: "NostrNotes"
-      - framework: "Frameworks/NostrNotesCore.xcframework"
-        embed: false

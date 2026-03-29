@@ -8,3 +8,5 @@ android/app/build/
 android/build/
 ios/Frameworks/
 ios/Bindings/
+ios/.build/
+ios/*.xcodeproj

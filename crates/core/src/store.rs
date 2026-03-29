@@ -2,7 +2,7 @@ use rusqlite::Connection;
 use rusqlite_migration::{Migrations, M};
 
 use crate::error::Error;
-use crate::models::Note;
+use crate::models::{truncated_npub, Note};
 
 pub struct Store {
     conn: Connection,
@@ -13,15 +13,18 @@ impl Store {
         let db_path = format!("{}/notes.db", data_dir);
         let mut conn = Connection::open(&db_path)?;
 
-        let migrations = Migrations::new(vec![M::up(
-            "CREATE TABLE IF NOT EXISTS notes (
-                id TEXT PRIMARY KEY,
-                pubkey TEXT NOT NULL,
-                content TEXT NOT NULL,
-                created_at INTEGER NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS idx_notes_created_at ON notes(created_at DESC);",
-        )]);
+        let migrations = Migrations::new(vec![
+            M::up(
+                "CREATE TABLE IF NOT EXISTS notes (
+                    id TEXT PRIMARY KEY,
+                    pubkey TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    created_at INTEGER NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_notes_created_at ON notes(created_at DESC);",
+            ),
+            M::up("ALTER TABLE notes ADD COLUMN display_name TEXT NOT NULL DEFAULT '';"),
+        ]);
         migrations.to_latest(&mut conn)?;
 
         Ok(Self { conn })
@@ -29,23 +32,39 @@ impl Store {
 
     pub fn upsert_note(&self, note: &Note) -> Result<(), Error> {
         self.conn.execute(
-            "INSERT OR IGNORE INTO notes (id, pubkey, content, created_at) VALUES (?1, ?2, ?3, ?4)",
-            rusqlite::params![note.id, note.pubkey, note.content, note.created_at],
+            "INSERT OR REPLACE INTO notes (id, pubkey, content, created_at, display_name) \
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            rusqlite::params![
+                note.id,
+                note.pubkey,
+                note.content,
+                note.created_at,
+                note.display_name
+            ],
         )?;
         Ok(())
     }
 
     pub fn list_notes(&self, limit: u32) -> Result<Vec<Note>, Error> {
         let mut stmt = self.conn.prepare(
-            "SELECT id, pubkey, content, created_at FROM notes ORDER BY created_at DESC LIMIT ?1",
+            "SELECT id, pubkey, content, created_at, display_name \
+             FROM notes ORDER BY created_at DESC LIMIT ?1",
         )?;
         let notes = stmt
             .query_map(rusqlite::params![limit], |row| {
+                let pubkey: String = row.get(1)?;
+                let display_name: String = row.get(4)?;
+                let display = if display_name.is_empty() {
+                    truncated_npub(&pubkey)
+                } else {
+                    display_name
+                };
                 Ok(Note {
                     id: row.get(0)?,
-                    pubkey: row.get(1)?,
+                    pubkey,
                     content: row.get(2)?,
                     created_at: row.get(3)?,
+                    display_name: display,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -64,22 +83,28 @@ impl Store {
 mod tests {
     use super::*;
 
+    fn test_note(id: &str, pubkey: &str, content: &str, created_at: i64) -> Note {
+        Note {
+            id: id.into(),
+            pubkey: pubkey.into(),
+            content: content.into(),
+            created_at,
+            display_name: format!("{pubkey}_display"),
+        }
+    }
+
     #[test]
     fn test_upsert_and_list() {
         let dir = tempfile::tempdir().unwrap();
         let store = Store::new(dir.path().to_str().unwrap()).unwrap();
 
-        let note = Note {
-            id: "abc123".into(),
-            pubkey: "npub1test".into(),
-            content: "Hello Nostr!".into(),
-            created_at: 1700000000,
-        };
+        let note = test_note("abc123", "deadbeef", "Hello Nostr!", 1700000000);
         store.upsert_note(&note).unwrap();
 
         let notes = store.list_notes(50).unwrap();
         assert_eq!(notes.len(), 1);
         assert_eq!(notes[0].content, "Hello Nostr!");
+        assert_eq!(notes[0].display_name, "deadbeef_display");
     }
 
     #[test]
@@ -87,12 +112,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let store = Store::new(dir.path().to_str().unwrap()).unwrap();
 
-        let note = Note {
-            id: "abc123".into(),
-            pubkey: "npub1test".into(),
-            content: "Hello Nostr!".into(),
-            created_at: 1700000000,
-        };
+        let note = test_note("abc123", "deadbeef", "Hello Nostr!", 1700000000);
         store.upsert_note(&note).unwrap();
         store.upsert_note(&note).unwrap();
 
@@ -105,20 +125,10 @@ mod tests {
         let store = Store::new(dir.path().to_str().unwrap()).unwrap();
 
         store
-            .upsert_note(&Note {
-                id: "older".into(),
-                pubkey: "pk".into(),
-                content: "old".into(),
-                created_at: 1000,
-            })
+            .upsert_note(&test_note("older", "pk", "old", 1000))
             .unwrap();
         store
-            .upsert_note(&Note {
-                id: "newer".into(),
-                pubkey: "pk".into(),
-                content: "new".into(),
-                created_at: 2000,
-            })
+            .upsert_note(&test_note("newer", "pk", "new", 2000))
             .unwrap();
 
         let notes = store.list_notes(50).unwrap();

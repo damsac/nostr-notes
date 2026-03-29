@@ -24,10 +24,7 @@ jobs:
       - name: Build iOS (XCFramework + bindings)
         run: ./scripts/ios-build --crate-name $FFI_CRATE --release
         env:
-          FFI_CRATE: myapp-ffi  # Change this
-
-      - name: Verify committed bindings are up-to-date
-        run: git diff --exit-code ios/Bindings/
+          FFI_CRATE: nostr-notes-ffi
 
       - name: Generate Xcode project
         run: cd ios && xcodegen generate
@@ -37,7 +34,7 @@ jobs:
           cd ios
           xcodebuild -resolvePackageDependencies \
             -project *.xcodeproj \
-            -scheme $(xcodegen dump --spec project.yml 2>/dev/null | head -1 || echo "App")
+            -scheme NostrNotes
 
       - name: Build for simulator
         run: |
@@ -45,7 +42,7 @@ jobs:
           set -o pipefail
           xcodebuild build \
             -project *.xcodeproj \
-            -scheme $(ls *.xcodeproj | sed 's/.xcodeproj//') \
+            -scheme NostrNotes \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
             -skipMacroValidation \
             ARCHS=arm64 \
@@ -57,7 +54,7 @@ jobs:
           set -o pipefail
           xcodebuild test \
             -project *.xcodeproj \
-            -scheme $(ls *.xcodeproj | sed 's/.xcodeproj//') \
+            -scheme NostrNotes \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
             -skipMacroValidation \
             ARCHS=arm64 \

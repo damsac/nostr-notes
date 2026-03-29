@@ -33,7 +33,7 @@ Triggers on push to main + PRs. Single job on ubuntu-latest:
 2. Install cargo-ndk
 3. Set up JDK 17
 4. Run `scripts/android-build`
-5. Run `cd android && ./gradlew assembleDebug`
+5. Run `cd android && gradle assembleDebug`
 6. Upload APK artifact (5-day retention)
 
 ## Adding Checks
