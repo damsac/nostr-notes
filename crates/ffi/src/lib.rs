@@ -1,6 +1,6 @@
 uniffi::setup_scaffolding!();
 
-use nostr_notes_core::{Error as CoreError, Note, RelayClient};
+use nostr_notes_core::{relative_time, Error as CoreError, Note, RelayClient};
 use std::sync::Mutex;
 use tokio::runtime::Runtime;
 
@@ -8,9 +8,9 @@ use tokio::runtime::Runtime;
 pub enum FfiError {
     #[error("Not found: {0}")]
     NotFound(String),
-    #[error("Relay error: {0}")]
+    #[error("Could not connect to relays: {0}")]
     Relay(String),
-    #[error("Internal error: {0}")]
+    #[error("Something went wrong: {0}")]
     Internal(String),
 }
 
@@ -30,15 +30,22 @@ pub struct FfiNote {
     pub pubkey: String,
     pub content: String,
     pub created_at: i64,
+    /// Resolved profile name or truncated npub (never empty).
+    pub display_name: String,
+    /// Human-readable relative timestamp (e.g. "2m ago", "3h ago").
+    pub relative_time: String,
 }
 
 impl From<Note> for FfiNote {
     fn from(n: Note) -> Self {
+        let rel = relative_time(n.created_at);
         FfiNote {
             id: n.id,
             pubkey: n.pubkey,
             content: n.content,
             created_at: n.created_at,
+            display_name: n.display_name,
+            relative_time: rel,
         }
     }
 }

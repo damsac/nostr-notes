@@ -40,7 +40,16 @@ struct NoteListView: View {
                     .refreshable { await loadNotes() }
                 }
             }
-            .navigationTitle("Nostr Notes")
+            .navigationTitle("Notes")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    if !notes.isEmpty {
+                        Text("\(notes.count)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
             .task { await loadNotes() }
         }
     }
@@ -63,11 +72,10 @@ struct NoteListView: View {
             let fetched = try appCore.fetchGlobalNotes(limit: 50)
             notes = fetched
         } catch {
-            // If core creation failed, clear it so next attempt retries
             if core == nil {
-                errorMessage = "Failed to connect: \(error.localizedDescription)"
+                errorMessage = "Failed to connect. Check your network and try again."
             } else {
-                errorMessage = error.localizedDescription
+                errorMessage = "Could not load notes. Pull to refresh."
             }
         }
         isLoading = false
@@ -78,26 +86,21 @@ struct NoteRow: View {
     let note: FfiNote
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(note.content)
-                .lineLimit(5)
-            HStack {
-                Text(String(note.pubkey.prefix(12)) + "...")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Text(note.displayName)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
                 Spacer()
-                Text(formatTimestamp(note.createdAt))
+                Text(note.relativeTime)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.tertiary)
             }
+            Text(note.content)
+                .font(.body)
+                .lineLimit(6)
+                .foregroundStyle(.primary)
         }
         .padding(.vertical, 4)
-    }
-
-    func formatTimestamp(_ ts: Int64) -> String {
-        let date = Date(timeIntervalSince1970: TimeInterval(ts))
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: .now)
     }
 }
