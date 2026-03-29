@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-/// Example model — replace with your domain types.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Item {
+pub struct Note {
     pub id: String,
-    pub name: String,
-    pub created_at: String,
+    pub pubkey: String,
+    pub content: String,
+    pub created_at: i64,
 }

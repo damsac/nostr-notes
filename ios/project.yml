@@ -19,10 +19,6 @@ targets:
     dependencies:
       - framework: "Frameworks/NostrNotesCore.xcframework"
         embed: false
-      - package: MapLibreSwiftUI
-        product: MapLibreSwiftUI
-      - package: MapLibreSwiftUI
-        product: MapLibreSwiftDSL
     settings:
       base:
         INFOPLIST_FILE: Info.plist
@@ -45,7 +41,3 @@ targets:
       - target: "NostrNotes"
       - framework: "Frameworks/NostrNotesCore.xcframework"
         embed: false
-packages:
-  MapLibreSwiftUI:
-    url: https://github.com/maplibre/swiftui-dsl.git
-    from: "0.24.0"
