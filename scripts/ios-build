@@ -104,9 +104,9 @@ mkdir -p "$XCFRAMEWORK_DIR"
 
 xcodebuild -create-xcframework \
   -library "target/aarch64-apple-ios/$PROFILE_DIR/lib${LIB_NAME}.a" \
-  -headers "$BUILD_DIR/headers" \
+  -headers "$HEADERS_DIR" \
   -library "target/aarch64-apple-ios-sim/$PROFILE_DIR/lib${LIB_NAME}.a" \
-  -headers "$BUILD_DIR/headers" \
+  -headers "$HEADERS_DIR" \
   -output "$XCFRAMEWORK_DIR/${LIB_NAME}.xcframework"
 
 # Clean up staging directory
