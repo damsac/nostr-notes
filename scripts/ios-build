@@ -44,8 +44,6 @@ CARGO_FLAGS=()
 
 # Determine the library name (crate name with hyphens replaced by underscores)
 LIB_NAME="${CRATE_NAME//-/_}"
-# UniFFI generates header/modulemap with the "FFI" suffix: e.g. nostr_notes_ffiFFI.h
-FFI_MODULE="${LIB_NAME}FFI"
 
 echo "=== Cross-compiling $CRATE_NAME for iOS ==="
 for target in "${TARGETS[@]}"; do
@@ -76,14 +74,28 @@ echo "=== Staging headers for XCFramework ==="
 # only the C header and a module.modulemap file. Passing the full Bindings dir
 # (which includes .swift files) breaks the framework structure.
 # Following the Pika pattern: stage into a dedicated directory.
+
+# Discover the UniFFI-generated header and modulemap.
+# UniFFI names these based on the module_name in uniffi.toml (e.g. NostrNotesCoreFFI.h),
+# NOT the cdylib_name — so we discover them rather than hardcoding.
+HEADER_FILE=$(find "$BINDINGS_DIR" -maxdepth 1 -name "*.h" | head -1)
+MODULEMAP_FILE=$(find "$BINDINGS_DIR" -maxdepth 1 -name "*.modulemap" | head -1)
+if [ -z "$HEADER_FILE" ] || [ -z "$MODULEMAP_FILE" ]; then
+  echo "ERROR: UniFFI did not generate expected header/modulemap in $BINDINGS_DIR" >&2
+  ls -la "$BINDINGS_DIR" >&2
+  exit 1
+fi
+FFI_MODULE=$(basename "$HEADER_FILE" .h)
+echo "  Detected FFI module: $FFI_MODULE"
+
 BUILD_DIR="$OUTPUT_DIR/.build"
 HEADERS_DIR="$BUILD_DIR/headers/${FFI_MODULE}"
 rm -rf "$BUILD_DIR"
 mkdir -p "$HEADERS_DIR"
 
-cp "$BINDINGS_DIR/${FFI_MODULE}.h" "$HEADERS_DIR/${FFI_MODULE}.h"
+cp "$HEADER_FILE" "$HEADERS_DIR/${FFI_MODULE}.h"
 # xcodebuild requires the modulemap to be named module.modulemap
-cp "$BINDINGS_DIR/${FFI_MODULE}.modulemap" "$HEADERS_DIR/module.modulemap"
+cp "$MODULEMAP_FILE" "$HEADERS_DIR/module.modulemap"
 
 echo "=== Creating XCFramework ==="
 XCFRAMEWORK_DIR="$OUTPUT_DIR/Frameworks"
