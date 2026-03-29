@@ -1,3 +1,4 @@
+// nostr-notes core: domain logic, relay connection, and local storage
 pub mod error;
 pub mod models;
 pub mod relay;
