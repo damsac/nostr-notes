@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use base64::Engine;
@@ -179,7 +179,7 @@ struct BlobDescriptor {
     content_type: Option<String>,
 }
 
-fn mime_from_path(path: &PathBuf) -> String {
+fn mime_from_path(path: &Path) -> String {
     let ext = path
         .extension()
         .and_then(|e| e.to_str())

@@ -32,7 +32,9 @@ jobs:
       - name: Boot iOS Simulator
         id: sim
         run: |
-          DEVICE=$(xcrun simctl create "E2E-iPhone" "iPhone 16" "iOS18.2")
+          RUNTIME=$(xcrun simctl list runtimes iOS -j | python3 -c "import sys,json; rts=json.load(sys.stdin)['runtimes']; print(rts[-1]['identifier'])" 2>/dev/null || echo "com.apple.CoreSimulator.SimRuntime.iOS-18-2")
+          echo "Using runtime: $RUNTIME"
+          DEVICE=$(xcrun simctl create "E2E-iPhone" "iPhone 16" "$RUNTIME")
           echo "udid=$DEVICE" >> "$GITHUB_OUTPUT"
           xcrun simctl boot "$DEVICE"
           echo "Waiting for simulator to finish booting..."
