@@ -13,8 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import dev.damsac.nostr_notes.rust.AppCore
-import dev.damsac.nostr_notes.rust.FfiNote
+import dev.damsac.nostrnotes.rust.AppCore
+import dev.damsac.nostrnotes.rust.FfiNote
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

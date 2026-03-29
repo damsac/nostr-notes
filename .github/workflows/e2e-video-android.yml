@@ -83,8 +83,8 @@ jobs:
 
       - name: Launch app
         run: |
-          adb shell am start -n dev.damsac.nostr_notes/.MainActivity 2>/dev/null || \
-          adb shell monkey -p dev.damsac.nostr-notes -c android.intent.category.LAUNCHER 1
+          adb shell am start -n dev.damsac.nostrnotes/.MainActivity 2>/dev/null || \
+          adb shell monkey -p dev.damsac.nostrnotes -c android.intent.category.LAUNCHER 1
 
       - name: Wait for app to load
         run: sleep 10

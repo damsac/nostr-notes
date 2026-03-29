@@ -1,5 +1,5 @@
 [bindings.kotlin]
-package_name = "dev.damsac.nostr-notes.rust"
+package_name = "dev.damsac.nostrnotes.rust"
 cdylib_name = "nostr_notes_ffi"
 
 [bindings.swift]

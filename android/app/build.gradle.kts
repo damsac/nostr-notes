@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "dev.damsac.nostr-notes"
+    namespace = "dev.damsac.nostrnotes"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "dev.damsac.nostr-notes"
+        applicationId = "dev.damsac.nostrnotes"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
@@ -32,7 +32,7 @@ android {
     // Ensure UniFFI bindings exist before building
     tasks.register("ensureUniffiGenerated") {
         doLast {
-            val bindingsDir = file("src/main/java/dev/damsac/nostr-notes/rust")
+            val bindingsDir = file("src/main/java/dev/damsac/nostrnotes/rust")
             if (!bindingsDir.exists() || bindingsDir.listFiles()?.isEmpty() != false) {
                 throw GradleException(
                     "UniFFI Kotlin bindings not found at ${bindingsDir.path}. " +
